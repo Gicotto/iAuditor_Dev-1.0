@@ -1,12 +1,12 @@
 CREATE OR REPLACE TABLE DEV_RAW_DB.IAUDITOR_RAW.IAUDITOR_SCHEDULE_ASSIGNEES_FLTN AS
 SELECT
-    DATA_DATE,
+    TO_CHAR(TO_TIMESTAMP_TZ(DATA_DATE), 'YYYY-MM-DD HH24:MI:SS') AS EXPORTED_AT,
     RECORD_INSERTED_AT,
-    DATA.value:id::string AS SCHEDULE_ASSIGNEE_ID,
+    DATA.value:id::string AS ID,
     DATA.value:schedule_id::string AS SCHEDULE_ID,
     DATA.value:assignee_id::string AS ASSIGNEE_ID,
-    DATA.value:type::string AS ASSIGNEE_TYPE,
-    DATA.value:name::string AS ASSIGNEE_NAME,
+    DATA.value:type::string AS TYPE,
+    DATA.value:name::string AS NAME,
     DATA.value:organisation_id::string AS ORGANISATION_ID
 FROM
     DEV_RAW_DB.IAUDITOR_RAW.IAUDITOR_SCHEDULE_ASSIGNEES,

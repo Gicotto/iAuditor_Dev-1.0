@@ -2,7 +2,7 @@ CREATE OR REPLACE TABLE DEV_RAW_DB.IAUDITOR_RAW.IAUDITOR_TEMPLATE_PERMISSIONS_FL
 SELECT
     DATA_DATE,
     RECORD_INSERTED_AT,
-    DATA.value:id::string AS PERMISSION_ID,
+    LEFT(DATA.value:id::string, 1) AS PERMISSION_ID,
     DATA.value:template_id::string AS TEMPLATE_ID,
     DATA.value:permission::string AS PERMISSION,
     DATA.value:assignee_type::string AS ASSIGNEE_TYPE,

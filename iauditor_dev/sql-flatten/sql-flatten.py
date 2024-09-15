@@ -11,7 +11,6 @@ trf_schema='IAUDITOR_TRF'
 warehouse='DEV_DATA_LOADER_WH'
 role='AR_DEV_ALL_ETL'
 
-
 # Snowflake connection setup
 conn = snowflake.connector.connect(
     user=user,
@@ -23,13 +22,20 @@ conn = snowflake.connector.connect(
     role=role
 )
 
-# Reading the SQL script from the file
-with open('actions-flatten.sql', 'r') as file:
-    sql_query = file.read()
+try:
+    # Reading the SQL script from the file
+    with open('inspections-flatten.sql', 'r') as file:
+        sql_query = file.read()
 
-# Executing the SQL script
-with conn.cursor() as cur:
-    cur.execute(sql_query)
+    # Executing the SQL script
+    with conn.cursor() as cur:
+        cur.execute(sql_query)
+
+    # Logging the success
+    print('SQL script executed successfully')
+
+except Exception as e:
+    print(f'Error executing the SQL script - Error: {e}')
 
 # Closing the connection
 conn.close()

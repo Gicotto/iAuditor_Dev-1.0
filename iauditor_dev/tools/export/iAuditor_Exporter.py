@@ -24,9 +24,9 @@ def write_last_call_time(api_config):
     """    
     set to true when ready to run as prod/cron job
     """
-    api_config.set('API', 'last_call_time', formatted_time)
-    with open(Config.exporter_config, 'w') as configfile:
-        api_config.write(configfile)
+    # api_config.set('API', 'last_call_time', formatted_time)
+    # with open(Config.exporter_config, 'w') as configfile:
+    #     api_config.write(configfile)
 
 """
 Takes the base URL and key as input and returns the parsed JSON response

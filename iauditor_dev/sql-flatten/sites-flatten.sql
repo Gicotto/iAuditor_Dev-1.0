@@ -1,9 +1,9 @@
 CREATE OR REPLACE TABLE DEV_RAW_DB.IAUDITOR_RAW.IAUDITOR_SITES_FLTN AS
 SELECT
-    DATA_DATE,
+    TO_CHAR(TO_TIMESTAMP_TZ(DATA_DATE), 'YYYY-MM-DD HH24:MI:SS') AS EXPORTED_AT,
     RECORD_INSERTED_AT,
     DATA.value:id::string AS SITE_ID,
-    DATA.value:name::string AS SITE_NAME,
+    DATA.value:name::string AS NAME,
     DATA.value:creator_id::string AS CREATOR_ID,
     DATA.value:organisation_id::string AS ORGANISATION_ID,
     DATA.value:deleted::boolean AS DELETED,
