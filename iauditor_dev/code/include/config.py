@@ -1,15 +1,15 @@
-import os
 import polars as pl
 from pathlib import Path
 
 # Test mode
 # False - relocates zip file from files to files/processed
 # True - leaves zip in files to allow for repetitive testing with the same zip file
-TEST_MODE = True
+TEST_MODE = False
 
 MOVE_SOURCE_FILE_AFTER_PROCESSING = True # True = moves source file to processed folder after processing. False = does not move source file
 PULL_FILES_FROM_SOURCE = True  # True(use for prod) = pulls files from source every time. False = does not call API to get files
 SAVE_TO_DATABASE = True  # True(use for prod) = TO SAVE TO DB. False = does not save to DB
+DELETE_FILES_BEFORE_PROCESSING = True  # True = deletes files from ../files/processed/details after processing. False = does not delete files
 
 RUN_SPECIAL_TEST_CONDITIONS = False
 
@@ -59,6 +59,9 @@ ALLOWED_NAMES_LIST = [
     'schedules',
     'schedule_assignees',
     'schedule_occurrences',
+    'action_timeline_items',
+    'site_members',
+    'action_timeline_items'
 ]
 
 users_data_types = {
@@ -214,6 +217,19 @@ actions_data_types = {
     'asset_id' : pl.Utf8,
 }
 
+action_timeline_items_data_types = {
+    'item_id': pl.Utf8,
+    'task_id': pl.Utf8,
+    'organisation_id': pl.Utf8,
+    'task_creator_id': pl.Utf8,
+    'task_creator_name': pl.Utf8,
+    'timestamp': pl.Datetime,
+    'creator_id': pl.Utf8,
+    'creator_name': pl.Utf8,
+    'item_type': pl.Utf8,
+    'item_data': pl.Utf8,
+}
+
 action_assignees_data_types = {
     'id': pl.Utf8,  # Looks like a complex string, possibly an identifier with embedded UUID
     'action_id': pl.Utf8,  # UUID
@@ -260,12 +276,25 @@ inspection_items_data_types = {
     'location_latitude': pl.Utf8, # Use Utf8 for potential missing data
     'location_longitude': pl.Utf8  # Use Utf8 for potential missing data
 }
+
+site_members_data_types = {
+    'site_id': pl.Utf8,
+    'member_id': pl.Utf8,
+    'exported_at': pl.Datetime,
+}
+
 file_config = {
     'actions': {
         'table_name': 'IAUDITOR_ACTIONS',
         'data_types': actions_data_types,
         'file_name': 'actions.dat',
         'date_columns': ['due_date', 'created_at', 'modified_at', 'exported_at', 'completed_at']
+    },
+    'action_timeline_items': {
+        'table_name': 'IAUDITOR_ACTION_TIMELINE_ITEMS',
+        'data_types': action_timeline_items_data_types,
+        'file_name': 'action_timeline_items.dat',
+        'date_columns': ['timestamp']
     },
     'action_assignees': {
         'table_name': 'IAUDITOR_ACTION_ASSIGNEES',
@@ -301,6 +330,12 @@ file_config = {
         'table_name': 'IAUDITOR_SITES',
         'data_types': sites_data_types,
         'file_name': 'sites.dat',
+        'date_columns': ['exported_at']
+    },
+    'site_members': {
+        'table_name': 'IAUDITOR_SITE_MEMBERS',
+        'data_types': site_members_data_types,
+        'file_name': 'site_members.dat',
         'date_columns': ['exported_at']
     },
     'template_permissions': {

@@ -1,27 +1,17 @@
-import requests
 import configparser
-import json
 import snowflake.connector
-from pathlib import Path
-import polars as pl
+
 import pandas as pd
-from config import *
-import os
-import csv
-from sqlalchemy import create_engine
-from snowflake.sqlalchemy import URL
+
 from snowflake.connector.pandas_tools import write_pandas
 from Utils import *
 import os
 
 processed_location = 'files/processing/ready/'
 
-
-
 class SnowflakeDataImporter:
     prefix = '../processing/ready'
     suffix = '.dat'
-
 
     @staticmethod
     def import_ready_files_to_snowflake(file):
@@ -35,8 +25,7 @@ class SnowflakeDataImporter:
         snowflake_config = configparser.ConfigParser()
         snowflake_config.read(config_file_path)
 
-        Utils.log(msg=f"Importing file: {file} to Snowflake...", l_bln_print_to_screen=True, l_bln_log_to_file=True)
-        Utils.log(msg="Exiting Program...", l_bln_print_to_screen=True, l_bln_log_to_file=True, l_bln_die=True)
+        Utils.log(msg=f"Starting Upload Process for file: {file} to Snowflake...", l_bln_print_to_screen=True, l_bln_log_to_file=True)
 
         # Actions.dat uploading
         if '/actions.dat' in file:
@@ -107,11 +96,24 @@ class SnowflakeDataImporter:
                       l_bln_log_to_file=True)
             was_uploaded = SnowflakeDataImporter.upload_file(file, snowflake_config)
 
+        # site_members.dat uploading
+        if '/site_members.dat' in file:
+            Utils.log(msg=f'Found site_members.dat: {file}', l_bln_print_to_screen=False,
+                      l_bln_log_to_file=True)
+            was_uploaded = SnowflakeDataImporter.upload_file(file, snowflake_config)
+
+        # action_timeline_items.dat uploading
+        if 'action_timeline_items' in file:
+            Utils.log(msg=f'Found action_timeline_items.dat: {file}', l_bln_print_to_screen=False,
+                      l_bln_log_to_file=True)
+            was_uploaded = SnowflakeDataImporter.upload_file(file, snowflake_config)
+
+
         if was_uploaded:
-            Utils.log(msg=f"Successfully imported {file} to Snowflake.", l_bln_print_to_screen=True, l_bln_log_to_file=True)
+            Utils.log(msg=f"Successfully uploaded {file} to Snowflake.", l_bln_print_to_screen=True, l_bln_log_to_file=True)
         else:
-            Utils.log(msg=f"Failed to import {file} to Snowflake.", l_bln_print_to_screen=True,
-                      l_bln_log_to_file=True, l_str_log_type=Utils.LOG_TYPE_ERROR)
+            Utils.log(msg=f"Failed to upload {file} to Snowflake.", l_bln_print_to_screen=True, l_str_log_type=Utils.LOG_TYPE_ERROR, l_str_log_file=Utils.ERROR_LOG_FILE,
+                      l_bln_log_to_file=True)
         return
 
     """
@@ -128,34 +130,33 @@ class SnowflakeDataImporter:
         inspections_df = pl.read_csv(file, dtypes=file_config['data_types'], has_header=True, separator='\t')
         pd_inspections_df = inspections_df.to_pandas()
 
+        # Remove after testing
+        # Check lengths of columns
+        #pd_inspections_df['lengths'] = pd_inspections_df['item_data'].apply(SnowflakeDataImporter.safe_len)
+        #max_length_index = pd_inspections_df['lengths'].idxmax()
+        #print(pd_inspections_df.loc[max_length_index, 'item_data'])
+        #Utils.log(msg=f"Max Length: {max_length_index}", l_bln_print_to_screen=True, l_bln_log_to_file=True, l_bln_die=True)
+
         for col in date_columns:
             pd_inspections_df[col] = pd_inspections_df[col].dt.strftime('%Y-%m-%d %H:%M:%S')
-        # Utils.log(msg=f"Datatypes for Pandas: {pd_inspections_df.dtypes}", l_bln_print_to_screen=True, l_bln_log_to_file=True)
+        Utils.log(msg=f"Datatypes for Pandas: {pd_inspections_df.dtypes}", l_bln_print_to_screen=False, l_bln_log_to_file=True)
 
         # Convert column names to uppercase to match Database
         pd_inspections_df.columns = map(str.upper, pd_inspections_df.columns)
 
+        # Get the current environment and database
         current_env = SnowflakeDataImporter.get_environment()
-        try:
-            if current_env == '_dev':
-                database = 'DEV_DATABASE'
-            elif current_env == '_stage':
-                database = 'STAGE_DATABASE'
-            elif current_env == '_prod':
-                database = 'PROD_DATABASE'
-        except Exception as e:
-            Utils.log(msg=f"Failed to get database name: {e}", l_bln_print_to_screen=True, l_bln_log_to_file=True, l_str_log_type=Utils.LOG_TYPE_ERROR, l_bln_die=True)
-
+        database = SnowflakeDataImporter.get_database(current_env)
 
         # Create a SQLAlchemy Engine
         conn = snowflake.connector.connect(
             user=snowflake_config.get(database, 'user'),
-            password=snowflake_config.get('database', 'password'),
-            account=snowflake_config.get('DATABASE', 'account'),
-            database=snowflake_config.get('DATABASE', 'trf_database'),
-            schema=snowflake_config.get('DATABASE', 'trf_schema'),
-            warehouse=snowflake_config.get('DATABASE', 'warehouse'),
-            role=snowflake_config.get('DATABASE', 'role')
+            password=snowflake_config.get(database, 'password'),
+            account=snowflake_config.get(database, 'account'),
+            database=snowflake_config.get(database, 'trf_database'),
+            schema=snowflake_config.get(database, 'trf_schema'),
+            warehouse=snowflake_config.get(database, 'warehouse'),
+            role=snowflake_config.get(database, 'role')
         )
 
         try:
@@ -170,11 +171,24 @@ class SnowflakeDataImporter:
                 success, nchunks, nrows, _ = write_pandas(conn, pd_inspections_df, table_name)
                 Utils.log(msg=f"Success: {success}, Number of chunks: {nchunks}, Number of rows: {nrows}", l_bln_print_to_screen=True, l_bln_log_to_file=True)
         except Exception as e:
-            Utils.log(msg=f"Failed to write to table: {e} - Table Name: {table_name}", l_bln_print_to_screen=True, l_bln_log_to_file=True, l_str_log_type=Utils.LOG_TYPE_ERROR, l_bln_die=True)
+            Utils.log(msg=f"Failed to write to table: {e} - Table Name: {table_name}", l_bln_print_to_screen=True, l_bln_log_to_file=True, l_str_log_type=Utils.LOG_TYPE_ERROR, l_str_log_file=Utils.ERROR_LOG_FILE, l_bln_die=False)
             return False
 
         Utils.log(msg=f"Successfully uploaded {file} to Snowflake.", l_bln_print_to_screen=True, l_bln_log_to_file=True, l_bln_die=False)
         return True
+
+    @staticmethod
+    def get_database(env):
+        if env == '_dev':
+            return 'DEV_DATABASE'
+        if env == '_stage':
+            return 'STAGE_DATABASE'
+        if env == '_prod':
+            return 'PROD_DATABASE'
+        else:
+            Utils.log(msg=f"Could not find database for environment: {env}", l_bln_print_to_screen=True, l_str_log_type=Utils.LOG_TYPE_ERROR, l_str_log_file=Utils.ERROR_LOG_FILE, l_bln_log_to_file=True)
+            return False
+
 
     @staticmethod
     def find_file_info(file):
@@ -202,7 +216,12 @@ class SnowflakeDataImporter:
             return config.file_config['templates']
         if '/users.dat' in file:
             return config.file_config['users']
-        Utils.log(msg=f"Could not find entry for {file}", l_bln_print_to_screen=True, l_bln_log_to_file=True)
+        if '/site_members.dat' in file:
+            return config.file_config['site_members']
+        if '/action_timeline_items.dat' in file:
+            return config.file_config['action_timeline_items']
+
+        Utils.log(msg=f"Could not find entry for {file}", l_bln_print_to_screen=True, l_str_log_type=Utils.LOG_TYPE_ERROR, l_str_log_file=Utils.ERROR_LOG_FILE, l_bln_log_to_file=True)
         return None
 
     @staticmethod
@@ -217,3 +236,10 @@ class SnowflakeDataImporter:
             return '_prod'
         else:
             return dir_path
+
+    @staticmethod
+    def safe_len(x):
+        if x is None:
+            return 0
+        else:
+            return len(x)

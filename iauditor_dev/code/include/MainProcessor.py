@@ -1,16 +1,7 @@
-import os
-import sys
-from pathlib import Path
-import subprocess
-import time
-from shutil import copy2
-
 from config import *
-from Utils import *
 from SnowflakeDataImporter import *
 
 DATA_FILES_BASE_DIR = Path(__file__).parent / '../../files/'
-
 
 class MainProcessor:
     # Defining class constants (equivalent to const in PHP)
@@ -43,6 +34,9 @@ class MainProcessor:
         if PULL_FILES_FROM_SOURCE:
             MainProcessor.import_new_files_from_main_source()
 
+        if DELETE_FILES_BEFORE_PROCESSING:
+           Utils.delete_files_in_directory(MainProcessor.PROCESSED_DETAIL_FILES_LOCATION_KEY)
+
         # Important! Develop here to SnowFlake
         MainProcessor.load_data_to_database()
 
@@ -68,16 +62,6 @@ class MainProcessor:
 
         Utils.log(f"\nFinished importing new files: \t{Utils.get_my_duration(start_time, True)}\n", True, False,
                   Utils.LOG_TYPE_INFO)
-
-    """
-    Note: Marked for removal
-    """
-    @staticmethod
-    def build_delete_statements():
-        l_str_queries = ''
-        for value in ALLOWED_NAMES_LIST:
-            l_str_queries += f"DELETE FROM {MY_TABLES_PREFIX}{value.upper()}\n"
-        print(l_str_queries)
 
     @staticmethod
     def load_data_to_database(l_bln_check_for_new_files=True):
@@ -106,24 +90,20 @@ class MainProcessor:
             if l_bln_is_approved:
                 # load data into Snowflake
                 if SAVE_TO_DATABASE:
-                    """
-                    Must Change to SnowFlakeDataImporter ->
-                    """
-                    print("Made it to the SnowFlakeDataImporter section."
-                          "This is where the data will be loaded into the SnowFlake database.")
+                    Utils.log("Begin Upload process", True, False, Utils.LOG_TYPE_INFO)
+                    Utils.log(f"File to import: {l_ary_ready_file_metadata['base_file_no_ext']}", True, False, Utils.LOG_TYPE_INFO)
                     #Find actual file to import and change accordingly
-                    print(f"File to import: {l_ary_ready_file_metadata['base_file_no_ext']}")
                     SnowflakeDataImporter.import_ready_files_to_snowflake(l_ary_ready_file_metadata['data_file'])
 
                 # clean up this ready file. Move to processed/details
                 l_bln_file_cleaned_up = MainProcessor.cleanup_ready_file(l_ary_ready_file_metadata, l_bln_is_approved)
 
                 if not l_bln_file_cleaned_up:
-                    Utils.log(f"WARNING: Was not able to clean up ready file: {l_ary_ready_file_metadata}", True, False, Utils.LOG_TYPE_WARN)
+                    Utils.log(f"WARNING: Was not able to clean up ready file: {l_ary_ready_file_metadata}", l_bln_print_to_screen=True, l_str_log_type=Utils.LOG_TYPE_WARN, l_str_log_file=Utils.ERROR_LOG_FILE,)
             else:
                 # clean up this ready file. Move to unprocessed/unapproved
                 l_bln_file_cleaned_up = MainProcessor.cleanup_ready_file(l_ary_ready_file_metadata, l_bln_is_approved)
-                Utils.log(f"{__name__}\nWARNING: file not approved and it won't be inserted to the database:\t{Path(l_ary_ready_file_metadata[Utils.DATA_FILE_KEY]).name}\n\tThis file has been moved to files/{MainProcessor.UNPROCESSED_UNAPPROVED_FILES_LOCATION_KEY}", True, False, Utils.LOG_TYPE_WARN)
+                Utils.log(f"{__name__}\nWARNING: file not approved and it won't be inserted to the database:\t{Path(l_ary_ready_file_metadata[Utils.DATA_FILE_KEY]).name}\n\tThis file has been moved to files/{MainProcessor.UNPROCESSED_UNAPPROVED_FILES_LOCATION_KEY}", l_bln_print_to_screen=True, l_bln_die=False, l_str_log_type= Utils.LOG_TYPE_WARN, l_str_log_file=Utils.WARNING_LOG_FILE)
 
         Utils.log(f"{__name__}\nFinished processing all {l_int_total_rows} ready files.\t{Utils.get_my_duration(start_time, True)}\n\tSuccessful files were moved to files/processed directory", True, False, Utils.LOG_TYPE_INFO)
 
@@ -232,7 +212,7 @@ class MainProcessor:
                 Utils.relocate_file(l_str_unprocessed_full_file_path, os.path.join(l_str_error_processed_file_location, Path(l_str_unprocessed_full_file_path).name))
 
                 l_ary_processing_stats[Utils.LOG_TYPE_ERROR] += 1
-                Utils.log(f"\nERROR: could not parse and save {l_str_unprocessed_full_file_path}. {l_ary_parsed_content}.\t{Utils.get_my_duration(start_time, True)}\n", True, False, Utils.LOG_TYPE_ERROR)
+                Utils.log(f"\nERROR: could not parse and save {l_str_unprocessed_full_file_path}. {l_ary_parsed_content}.\t{Utils.get_my_duration(start_time, True)}\n", l_bln_print_to_screen=True, l_bln_die=False, l_str_log_type=Utils.LOG_TYPE_ERROR, l_str_log_file=Utils.ERROR_LOG_FILE)
             else:
                 # delete original unprocessed file, since we're done processing it successfully
                 Utils.delete_file(l_str_unprocessed_full_file_path)
@@ -336,18 +316,16 @@ class MainProcessor:
                 if not l_bln_file_deleted:
                     l_ary_stats['error'].append(l_str_full_file_path)
                     Utils.log(f"WARNING: Was not able to delete ready file: {l_ary_ready_file_metadata}",
-                              l_str_log_type=Utils.LOG_TYPE_WARN)
+                              l_str_log_type=Utils.LOG_TYPE_WARN, l_str_log_file=Utils.ERROR_LOG_FILE)
                 else:
                     l_ary_stats['success'].append(l_str_full_file_path)
             else:
                 # not approved
                 Utils.log(
                     f"\nWARNING: file not approved and it won't be deleted:\t{Path(l_ary_ready_file_metadata[Utils.DATA_FILE_KEY]).name}",
-                    l_str_log_type=Utils.LOG_TYPE_WARN)
+                    l_str_log_type=Utils.LOG_TYPE_WARN, l_str_log_file=Utils.WARNING_LOG_FILE)
 
         Utils.log(
             f"\nFinished processing all {l_int_total_rows} ready files.\t{Utils.get_my_duration(start_time, True)}\n",
             l_str_log_type=Utils.LOG_TYPE_INFO)
         return l_ary_stats
-
-

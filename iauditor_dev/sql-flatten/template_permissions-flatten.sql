@@ -1,0 +1,13 @@
+CREATE OR REPLACE TABLE DEV_RAW_DB.IAUDITOR_RAW.IAUDITOR_TEMPLATE_PERMISSIONS_FLTN AS
+SELECT
+    DATA_DATE,
+    RECORD_INSERTED_AT,
+    DATA.value:id::string AS PERMISSION_ID,
+    DATA.value:template_id::string AS TEMPLATE_ID,
+    DATA.value:permission::string AS PERMISSION,
+    DATA.value:assignee_type::string AS ASSIGNEE_TYPE,
+    DATA.value:assignee_id::string AS ASSIGNEE_ID,
+    DATA.value:organisation_id::string AS ORGANISATION_ID
+FROM
+    DEV_RAW_DB.IAUDITOR_RAW.IAUDITOR_TEMPLATE_PERMISSIONS,
+    LATERAL FLATTEN(input => JSON_PAYLOAD:data) AS DATA;

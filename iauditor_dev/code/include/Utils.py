@@ -1,5 +1,4 @@
 import os
-from pathlib import Path
 import config
 from zipfile import ZipFile
 import shutil
@@ -11,12 +10,17 @@ import time
 import psutil
 import re
 import polars as pl
-import numpy as np
+import glob
 
 
 class Utils:
-    LOG_FILE = '/tmp/my_utils.log'
-    LOG_TO_FILE = False
+    now = datetime.now()
+    now_str = now.strftime("D%Y%m%d_T%H%M%S")
+    LOG_FILE = f'../log/iAuditor_{now_str}.log'
+    ERROR_LOG_FILE = f'../log/iAuditor_{now_str}_error.log'
+    WARNING_LOG_FILE = f'../log/iAuditor_{now_str}_warning.log'
+
+    LOG_TO_FILE = True
 
     LOG_LEVEL_KEY = 'log_level'
 
@@ -226,92 +230,12 @@ class Utils:
 
         return l_ary_meta_data
 
-    # Apply data trimming rule
-    @staticmethod
-    def apply_data_replacement_rule(l_ary_data, l_str_base_file_name):
-        l_bln_has_active_rule = l_str_base_file_name in config.EXTRA_RULES['data_replacement_rules'] and \
-                                config.EXTRA_RULES['data_replacement_rules'][l_str_base_file_name].get('active', False)
-
-        # only move forward if we have an active rule for this file
-        if l_bln_has_active_rule:
-            l_ary_columns_to_process = config.EXTRA_RULES['data_replacement_rules'][l_str_base_file_name].get('columns',
-                                                                                                             [])
-
-            # column count is more than expected
-            if l_ary_columns_to_process:
-                for l_str_column_details in l_ary_columns_to_process:
-                    if 'column_position' in l_str_column_details and l_str_column_details['column_position'] and \
-                            'replacement_values' in l_str_column_details and l_str_column_details['replacement_values']:
-                        if isinstance(l_str_column_details['column_position'], list):
-                            for l_int_index in l_str_column_details['column_position']:
-                                l_int_index -= 1  # make zero-based
-                                # replace
-                                for key, value in l_str_column_details['replacement_values'].items():
-                                    l_ary_data[l_int_index] = l_ary_data[l_int_index].replace(key, value)
-                        else:
-                            l_int_index = l_str_column_details['column_position'] - 1  # make zero-based
-                            # replace
-                            for key, value in l_str_column_details['replacement_values'].items():
-                                l_ary_data[l_int_index] = l_ary_data[l_int_index].replace(key, value)
-        return l_ary_data
-
-    # Apply Data Truncating Rule
-    @staticmethod
-    def apply_data_truncating_rule(l_ary_data, l_str_base_file_name):
-        l_bln_has_active_rule = l_str_base_file_name in config.EXTRA_RULES['data_truncating_rules'] and \
-                                config.EXTRA_RULES['data_truncating_rules'][l_str_base_file_name].get('active', False)
-
-        # only move forward if we have an active rule for this file
-        if l_bln_has_active_rule:
-            l_ary_columns_to_process = config.EXTRA_RULES['data_truncating_rules'][l_str_base_file_name].get('columns',
-                                                                                                            [])
-
-            # column acount is more than expected
-            if l_ary_columns_to_process:
-                for l_str_column_details in l_ary_columns_to_process:
-                    if 'column_position' in l_str_column_details and l_str_column_details['column_position'] and \
-                            'max_length' in l_str_column_details and l_str_column_details['max_length']:
-                        l_int_max_length = l_str_column_details['max_length']
-                        if isinstance(l_str_column_details['column_position'], list):
-                            for l_int_the_index in l_str_column_details['column_position']:
-                                l_int_index = l_int_the_index - 1  # make zero-based
-                                if l_int_index < len(l_ary_data) and len(l_ary_data[l_int_index]) > l_int_max_length:
-                                    l_ary_data[l_int_index] = l_ary_data[l_int_index][:l_int_max_length].strip()
-                        else:
-                            l_int_index = l_str_column_details['column_position'] - 1  # make zero-based
-                            if l_int_index < len(l_ary_data) and len(l_ary_data[l_int_index]) > l_int_max_length:
-                                l_ary_data[l_int_index] = l_ary_data[l_int_index][:l_int_max_length].strip()
-        return l_ary_data
-
     """ 
     Apply Data Trimming Rule
     
     :return array
     
     """
-
-    @staticmethod
-    def apply_data_trimming_rule(l_ary_data, l_str_base_file_name):
-        l_bln_has_active_trimming_rule = l_str_base_file_name in config.EXTRA_RULES['data_trimming_rules'] and \
-                                         config.EXTRA_RULES['data_trimming_rules'][l_str_base_file_name].get('active', False)
-
-        # only move forward if we have an active rule for this file
-        if l_bln_has_active_trimming_rule:
-            l_int_expected_columns_count = config.EXTRA_RULES['data_trimming_rules'][l_str_base_file_name].get(
-                'expected_columns_count', 0)
-            l_ary_columns_positions_to_remove = config.EXTRA_RULES['data_trimming_rules'][l_str_base_file_name].get(
-                'remove_column_in_positions', [])
-
-            # column count is more than expected
-            if l_int_expected_columns_count and l_ary_columns_positions_to_remove and len(
-                    l_ary_data) > l_int_expected_columns_count:
-                for l_int_index_to_remove in l_ary_columns_positions_to_remove:
-                    l_int_index_to_remove -= 1  # make zero-based
-
-                    # remove unexpected columns
-                    if l_int_index_to_remove < len(l_ary_data):
-                        del l_ary_data[l_int_index_to_remove]
-        return l_ary_data
 
     """
     Parse File and Save to New File
@@ -414,6 +338,16 @@ class Utils:
         if '/users.dat' in l_str_full_file_path:
             Utils.log(f"Found users.dat: {l_str_full_file_path}", l_bln_print_to_screen=True, l_bln_log_to_file=True)
             is_successful = Utils.transform_users(l_str_full_file_path, l_str_full_temp_file_name)
+
+        # site_members.dat Processing
+        if '/site_members.dat' in l_str_full_file_path:
+            Utils.log(f"Found site_members.dat: {l_str_full_file_path}", l_bln_print_to_screen=True, l_bln_log_to_file=True)
+            is_successful = Utils.transform_site_members(l_str_full_file_path, l_str_full_temp_file_name)
+
+        # action_timeline_items.dat Processing
+        if '/action_timeline_items.dat' in l_str_full_file_path:
+            Utils.log(f"Found action_timeline_items.dat: {l_str_full_file_path}", l_bln_print_to_screen=True, l_bln_log_to_file=True)
+            is_successful = Utils.transform_action_timeline_items(l_str_full_file_path, l_str_full_temp_file_name)
 
         i = 100
         return {
@@ -567,10 +501,27 @@ class Utils:
             }
 
     """
+    Permanently deletes files in directory 
+    """
+    @staticmethod
+    def delete_files_in_directory(directory_path):
+        # Get a list of all the file paths in the directory
+        files = glob.glob(os.path.join(directory_path, '*'))
+
+        # Iterate over the list of filepaths & remove each file.
+        for file in files:
+            try:
+                os.remove(file)
+                print(f"File {file} has been removed successfully")
+            except Exception as e:
+                print(f"Failed to delete {file}. Reason: {e}")
+
+    """
     takes csvfile for inspection_items, creates dataframe, and returns a transformed dataframe
     """
     @staticmethod
     def transform_inspection_items(csvfile, processed_path):
+        Utils.remove_newlines_in_quotes(csvfile)
         try:
             inspection_items_df = pl.read_csv(csvfile, dtypes=config.inspection_items_data_types)
         except Exception as e:
@@ -604,6 +555,7 @@ class Utils:
 
     @staticmethod
     def transform_action_assignees(csvfile, processed_path):
+        Utils.remove_newlines_in_quotes(csvfile)
         try:
             action_assignees_df = pl.read_csv(csvfile, dtypes=config.action_assignees_data_types)
         except Exception as e:
@@ -644,7 +596,24 @@ class Utils:
         return True
 
     @staticmethod
+    def transform_action_timeline_items(csvfile, processed_path):
+        Utils.remove_newlines_in_quotes(csvfile)
+        try:
+            actions_df = pl.read_csv(csvfile, dtypes=config.action_timeline_items_data_types)
+        except Exception as e:
+            print(f'Unable to read {csvfile} - error {e}')
+            return False
+
+        action_timeline_items_transformed = actions_df.with_columns([
+            pl.col('timestamp').dt.strftime("%Y-%m-%d").alias("timestamp")
+        ])
+
+        action_timeline_items_transformed.write_csv(processed_path, separator='\t')
+        return True
+
+    @staticmethod
     def transform_group_users(csvfile, processed_path):
+        Utils.remove_newlines_in_quotes(csvfile)
         try:
             group_users_df = pl.read_csv(csvfile, dtypes=config.group_users_data_types)
         except Exception as e:
@@ -662,6 +631,7 @@ class Utils:
 
     @staticmethod
     def transform_groups(csvfile, processed_path):
+        Utils.remove_newlines_in_quotes(csvfile)
         try:
             groups_df = pl.read_csv(csvfile, dtypes=config.groups_data_types)
         except Exception as e:
@@ -708,6 +678,25 @@ class Utils:
         return True
 
 
+    @staticmethod
+    def transform_site_members(csvfile, processed_path):
+        Utils.remove_newlines_in_quotes(csvfile)
+        try:
+            inspections_df = pl.read_csv(csvfile, dtypes=config.site_members_data_types)
+        except Exception as e:
+            print(f'Unable to read {csvfile} - error {e}')
+            return False
+
+        site_members_transformed = inspections_df.with_columns([
+
+            # Date formatting, removing extra precision from DateTime columns
+            pl.col("exported_at").dt.strftime("%Y-%m-%d").alias("exported_at"),  # Date formatting
+        ])
+
+        site_members_transformed.write_csv(processed_path, separator='\t')
+        return True
+
+
     """
     Remove newlines within quoted strings in a file. 
     Ensures each record is on a single line.
@@ -731,6 +720,7 @@ class Utils:
 
     @staticmethod
     def transform_schedule_assignees(csvfile, processed_path):
+        Utils.remove_newlines_in_quotes(csvfile)
         try:
             schedule_assignees_df = pl.read_csv(csvfile, dtypes=config.schedule_assignees_data_types)
         except Exception as e:
@@ -748,6 +738,7 @@ class Utils:
 
     @staticmethod
     def transform_schedules(csvfile, processed_path):
+        Utils.remove_newlines_in_quotes(csvfile)
         try:
             schedules_df = pl.read_csv(csvfile, dtypes=config.schedules_data_types)
         except Exception as e:
@@ -772,6 +763,7 @@ class Utils:
 
     @staticmethod
     def transform_sites(csvfile, processed_path):
+        Utils.remove_newlines_in_quotes(csvfile)
         try:
             sites_df = pl.read_csv(csvfile, dtypes=config.sites_data_types)
         except Exception as e:
@@ -792,6 +784,7 @@ class Utils:
 
     @staticmethod
     def transform_template_permissions(csvfile, processed_path):
+        Utils.remove_newlines_in_quotes(csvfile)
         try:
             template_permissions_df = pl.read_csv(csvfile, dtypes=config.template_permissions_data_types)
         except Exception as e:
@@ -809,6 +802,7 @@ class Utils:
 
     @staticmethod
     def transform_templates(csvfile, processed_path):
+        Utils.remove_newlines_in_quotes(csvfile)
         try:
             templates_df = pl.read_csv(csvfile, dtypes=config.templates_data_types)
         except Exception as e:
@@ -832,6 +826,7 @@ class Utils:
 
     @staticmethod
     def transform_users(csvfile, processed_path):
+        Utils.remove_newlines_in_quotes(csvfile)
         try:
             users_df = pl.read_csv(csvfile, dtypes=config.users_data_types)
         except Exception as e:
