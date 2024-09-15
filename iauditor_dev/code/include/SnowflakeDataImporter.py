@@ -7,6 +7,8 @@ from snowflake.connector.pandas_tools import write_pandas
 from Utils import *
 import os
 
+#fake comment
+
 processed_location = 'files/processing/ready/'
 
 class SnowflakeDataImporter:

@@ -14,6 +14,23 @@ exporter_config = 'iAuditor-Exporter-config.ini'
 
 table_prefix = "IAUDITOR_"
 
+sql_scripts = [
+    "action_assignees-flatten.sql",
+    "action_timeline_items-flatten.sql",
+    "actions-flatten.sql",
+    "group_users-flatten.sql",
+    "groups-flatten.sql",
+    "inspection_items-flatten.sql",
+    "inspections-flatten.sql",
+    "schedule_assignees-flatten.sql",
+    "schedules-flatten.sql",
+    "site_members-flatten.sql",
+    "sites-flatten.sql",
+    "template_permissions-flatten.sql",
+    "templates-flatten.sql"
+    "users-flatten.sql",
+ ]
+
 urls = {
     "actions": "https://api.safetyculture.io/feed/actions",
     "action_assignees": "https://api.safetyculture.io/feed/action_assignees",
@@ -30,6 +47,8 @@ urls = {
     "template_permissions": "https://api.safetyculture.io/feed/template_permissions",
     "users": "https://api.safetyculture.io/feed/users",
 }
+
+keep_url = ["https://api.safetyculture.io/feed/schedule_assignees", "https://api.safetyculture.io/feed/users"]
 
 json_keys = {
     "actions": {

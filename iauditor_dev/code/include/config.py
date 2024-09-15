@@ -20,6 +20,8 @@ EXPORTER_EXECUTABLE = EXPORTER_BASE_DIR / 'iauditor-exporter'
 EXPORTER_FILES_DIR = EXPORTER_BASE_DIR / 'export/'
 UNPROCESSED_FILES_DIR = Path(__file__).parent / '../../files/'
 
+# fake comment
+
 # General config
 GENERAL_CONFIGURATION = {
     'log_level': {

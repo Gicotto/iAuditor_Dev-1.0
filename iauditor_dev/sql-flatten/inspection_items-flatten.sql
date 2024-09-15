@@ -1,6 +1,5 @@
 CREATE OR REPLACE TABLE DEV_RAW_DB.IAUDITOR_RAW.IAUDITOR_INSPECTION_ITEMS_FLTN AS
 SELECT
-    RECORD_INSERTED_AT,
     DATA.value:id::string AS ID,
     DATA.value:item_id::string AS ITEM_ID,
     DATA.value:audit_id::string AS AUDIT_ID,

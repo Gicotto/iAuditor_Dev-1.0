@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 import os
 import sys
+## Soon to be phased out for IAuditorProcessor
+
 
 # Import the necessary module assuming 'MainProcessor' is similarly structured in Python
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'code', 'include'))
