@@ -78,6 +78,24 @@ class IAuditorExporter:
         return parsed_json
 
     """
+    
+    """
+    @staticmethod
+    def log_initializer():
+        return
+
+    """
+    Takes 
+    """
+    @staticmethod
+    def log(msg=None, level=None, log_file=True, print_msg=True):
+        if print_msg:
+            print(msg)
+        if log_file:
+            with open(log_file, 'a') as f:
+                f.write(f"{level}: {msg}\n")
+
+    """
     Main method to run the exporter. Calls the API for each endpoint in the Config.urls dictionary, then writes the
     response to Snowflake. Prints the success percentage of the API calls.
     """

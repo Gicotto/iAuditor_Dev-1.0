@@ -1,11 +1,10 @@
 CREATE OR REPLACE TABLE DEV_RAW_DB.IAUDITOR_RAW.IAUDITOR_TEMPLATE_PERMISSIONS_FLTN AS
 SELECT
-    TO_CHAR(TO_TIMESTAMP_TZ(DATA_DATE), 'YYYY-MM-DD HH24:MI:SS') AS EXPORTED_AT,
     LEFT(DATA.value:id::string, 1) AS PERMISSION_ID,
     DATA.value:template_id::string AS TEMPLATE_ID,
     DATA.value:permission::string AS PERMISSION,
-    DATA.value:assignee_type::string AS ASSIGNEE_TYPE,
     DATA.value:assignee_id::string AS ASSIGNEE_ID,
+    DATA.value:assignee_type::string AS ASSIGNEE_TYPE,
     DATA.value:organisation_id::string AS ORGANISATION_ID
 FROM
     DEV_RAW_DB.IAUDITOR_RAW.IAUDITOR_TEMPLATE_PERMISSIONS,

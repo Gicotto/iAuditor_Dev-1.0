@@ -1,12 +1,13 @@
 CREATE OR REPLACE TABLE DEV_RAW_DB.IAUDITOR_RAW.IAUDITOR_ACTION_ASSIGNEES_FLTN AS
 SELECT
-    TO_CHAR(TO_TIMESTAMP_TZ(DATA_DATE), 'YYYY-MM-DD HH24:MI:SS') AS EXPORTED_AT,
-    LEFT(DATA.value:id::string, 64) AS ID,    DATA.value:action_id::string AS ACTION_ID,
+    LEFT(DATA.value:id::string, 64) AS ID,
+    DATA.value:action_id::string AS ACTION_ID,
     DATA.value:assignee_id::string AS ASSIGNEE_ID,
     DATA.value:type::string AS TYPE,
     DATA.value:name::string AS CREATOR_USER_NAME,
     DATA.value:organisation_id::string AS ORGANISATION_ID,
-    TO_CHAR(TO_TIMESTAMP_TZ(DATA.value:modified_at::string), 'YYYY-MM-DD HH24:MI:SS') AS MODIFIED_AT
+    TO_CHAR(TO_TIMESTAMP_TZ(DATA.value:modified_at::string), 'YYYY-MM-DD') AS MODIFIED_AT,
+    TO_CHAR(TO_TIMESTAMP_TZ(DATA_DATE), 'YYYY-MM-DD') AS EXPORTED_AT
 FROM
     DEV_RAW_DB.IAUDITOR_RAW.IAUDITOR_ACTION_ASSIGNEES,
     LATERAL FLATTEN(input => JSON_PAYLOAD:data) AS DATA;
