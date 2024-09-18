@@ -81,19 +81,28 @@ class IAuditorExporter:
     
     """
     @staticmethod
-    def log_initializer():
-        return
-
-    """
-    Takes 
-    """
-    @staticmethod
     def log(msg=None, level=None, log_file=True, print_msg=True):
         if print_msg:
             print(msg)
         if log_file:
             with open(log_file, 'a') as f:
                 f.write(f"{level}: {msg}\n")
+        IAuditorExporter.logs.append({"level": level, "message": msg, "timestamp": datetime.now()})
+
+    @staticmethod
+    def upload_logs_to_snowflake(snowflake_config):
+        conn = IAuditorProcessor.get_snowflake_connection(snowflake_config)
+        log_df = pd.DataFrame(IAuditorExporter.logs)
+        table_name = "LOGS_TABLE"  # Replace with your actual logs table name
+        try:
+            success = write_pandas(conn, log_df, table_name)
+            if success:
+                print("Logs successfully uploaded to Snowflake.")
+            else:
+                print("Failed to upload logs to Snowflake.")
+        except Exception as e:
+            print(f"Error uploading logs to Snowflake: {e}")
+
 
     """
     Main method to run the exporter. Calls the API for each endpoint in the Config.urls dictionary, then writes the
