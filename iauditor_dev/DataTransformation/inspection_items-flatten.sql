@@ -1,4 +1,4 @@
-INSERT INTO DEV_RAW_DB.IAUDITOR_RAW.IAUDITOR_INSPECTION_ITEMS_FLTN (
+INSERT INTO DEV_TRF_DB.IAUDITOR_TRF.IAUDITOR_INSPECTION_ITEMS (
     ID,
     ITEM_ID,
     AUDIT_ID,
@@ -18,7 +18,7 @@ INSERT INTO DEV_RAW_DB.IAUDITOR_RAW.IAUDITOR_INSPECTION_ITEMS_FLTN (
     RESPONSE_ID,
     RESPONSE_SET_ID,
     IS_FAILED_RESPONSE,
-    COMMENT,
+    ICOMMENT,
     MEDIA_FILES,
     MEDIA_IDS,
     MEDIA_HYPERTEXT_REFERENCE,
@@ -53,7 +53,7 @@ SELECT
     DATA.value:response_id::string AS RESPONSE_ID,
     DATA.value:response_set_id::string AS RESPONSE_SET_ID,
     LEFT(DATA.value:is_failed_response::string, 1) AS IS_FAILED_RESPONSE,
-    DATA.value:comment::string AS COMMENT,
+    DATA.value:comment::string AS ICOMMENT,
     DATA.value:media_files::string AS MEDIA_FILES,
     LEFT(DATA.value:media_ids::string, 1) AS MEDIA_IDS,
     DATA.value:media_hypertext_reference::string AS MEDIA_HYPERTEXT_REFERENCE,

@@ -47,17 +47,18 @@ class IAuditorUtils:
         current_env = IAuditorUtils.get_environment()
         database = IAuditorUtils.get_database(current_env)
 
-        raw_schema_name = snowflake_config.get(database, 'raw_schema')
+        raw_schema_name = snowflake_config.get(database, 'trf_schema')
 
         if location == 'LOG':
             raw_schema_name = snowflake_config.get(database, 'log_schema')
+
 
         # Snowflake connection setup
         conn = snowflake.connector.connect(
             user=snowflake_config.get(database, 'user'),
             password=snowflake_config.get(database, 'password'),
             account=snowflake_config.get(database, 'account'),
-            database=snowflake_config.get(database, 'raw_database'),
+            database=snowflake_config.get(database, 'trf_database'),
             schema=raw_schema_name,
             warehouse=snowflake_config.get(database, 'warehouse'),
             role=snowflake_config.get(database, 'role')
