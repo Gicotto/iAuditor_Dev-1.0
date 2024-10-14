@@ -18,10 +18,10 @@ class IAuditorExporter:
         IAuditorUtils.generate_uuid()
 
         # Initialize Snowflake connection
-        if Config.upload_snowflake:
-            self.conn = IAuditorUtils.get_snowflake_connection(location='RAW')
+        #if Config.upload_snowflake:
+        #    self.conn = IAuditorUtils.get_snowflake_connection(location='RAW')
 
-    def run(self):
+    def run(self, conn):
         for key in Config.urls:
             # Create Empty DataFrame
             endpoint_df = pd.DataFrame(columns=['DATA_DATE', 'JSON_PAYLOAD', 'RECORD_INSERTED_AT', 'PROCESSED'])
@@ -79,7 +79,7 @@ class IAuditorExporter:
                 IAuditorUtils.log(msg=f"Attempting to write to {raw_table_name}", level="INFO", log_file=True,
                     print_msg=True)
                 try:
-                    success = write_pandas(self.conn, endpoint_df, raw_table_name)
+                    success = write_pandas(conn=conn, df=endpoint_df, table=raw_table_name, schema=os.environ("RAW_SCHEMA"), database=os.environ("RAW_DATABASE"))
                     IAuditorUtils.log(msg=f"Successfully uploaded dataframe to table: {raw_table_name}", level="INFO",
                         log_file=True, print_msg=True)
                     self.success_count += 1

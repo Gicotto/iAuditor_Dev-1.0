@@ -16,11 +16,13 @@ def loader_trigger(req: func.HttpRequest) -> func.HttpResponse:
     IAuditorUtils.log(msg='Python HTTP trigger function processed a request.', level='INFO', log_file=True, print_msg=True)
     start_time = time.time()
 
+    conn = IAuditorUtils.get_snowflake_connection()
+
     if Config.run_exporter:
         try:
             IAuditorUtils.log("Running IAuditorExporter")
             exporter = IAuditorExporter()
-            exporter.run()
+            exporter.run(conn=conn)
 
         except Exception as e:
             logging.error(f"Error: {e}")
@@ -34,7 +36,7 @@ def loader_trigger(req: func.HttpRequest) -> func.HttpResponse:
     if Config.run_processor:
         try:
             IAuditorUtils.log("Running IAuditorProcessor")
-            processor = IAuditorProcessor()
+            processor = IAuditorProcessor(conn=conn)
             processor.run()
 
         except Exception as e:

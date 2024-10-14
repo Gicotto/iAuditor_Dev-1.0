@@ -51,16 +51,6 @@ class IAuditorUtils:
         current_env = IAuditorUtils.get_environment()
         database = IAuditorUtils.get_database(current_env)
 
-        schema_name = os.environ["trf_schema"]
-        database = os.environ['trf_database']
-
-        if location == 'LOG':
-            schema_name = os.environ["log_schema"]
-            database = os.environ["raw_database"]
-
-        if location == 'RAW':
-            schema_name = os.environ["raw_schema"]
-            database = os.environ["raw_database"]
 
         print(f"Connecting to Snowflake with database: {database}, schema: {schema_name}")
         # Snowflake connection setup
@@ -69,7 +59,6 @@ class IAuditorUtils:
             password=os.environ["password"],
             account=os.environ["account"],
             database=database,
-            schema=schema_name,
             warehouse=os.environ['warehouse'],
             role=os.environ['role']
         )
@@ -96,12 +85,11 @@ class IAuditorUtils:
 
 
     @staticmethod
-    def upload_logs_to_snowflake():
-        logs_table_name = os.environ["log_table"]
-        conn = IAuditorUtils.get_snowflake_connection(location='LOG')
+    def upload_logs_to_snowflake(conn):
+        conn = IAuditorUtils.get_snowflake_connection()
         log_df = pd.DataFrame(IAuditorUtils.logs_df)
         try:
-            success = write_pandas(conn, log_df, logs_table_name)
+            success = write_pandas(conn=conn, df=log_df, table_name=os.environ("LOG_TABLE"), database=os.environ("RAW_DATABASE"), schema=os.environ("LOG_SCHEMA"))
             if success:
                 IAuditorUtils.log(msg="Logs successfully uploaded to Snowflake.", level="INFO",
                     log_file=True, print_msg=True)
