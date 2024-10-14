@@ -1,0 +1,44 @@
+INSERT INTO DEV_TRF_DB.IAUDITOR_TRF.IAUDITOR_SCHEDULES (
+    SCHEDULE_ID,
+    DESCRIPTION,
+    RECCURENCE,
+    DURATION,
+    MODIFIED_AT,
+    EXPORTED_AT,
+    FROM_DATE,
+    TO_DATE,
+    START_TIME_HOUR,
+    START_TIME_MINUTE,
+    ALL_MUST_COMPLETE,
+    STATUS,
+    ORGANISATION_ID,
+    TIMEZONE,
+    CAN_LATE_SUBMIT,
+    SITE_ID,
+    TEMPLATE_ID,
+    CREATOR_USER_ID
+)
+SELECT
+    DATA.value:id::string AS SCHEDULE_ID,
+    DATA.value:description::string AS DESCRIPTION,
+    DATA.value:recurrence::string AS RECCURENCE,
+    DATA.value:duration::string AS DURATION,
+    TO_CHAR(TO_TIMESTAMP_TZ(DATA.value:modified_at::string), 'YYYY-MM-DD') AS MODIFIED_AT,
+    TO_CHAR(TO_TIMESTAMP_TZ(DATA_DATE), 'YYYY-MM-DD') AS EXPORTED_AT,
+    TO_CHAR(TO_TIMESTAMP_TZ(DATA.value:from_date::string), 'YYYY-MM-DD') AS FROM_DATE,
+    TO_CHAR(TO_TIMESTAMP_TZ(DATA.value:to_date::string), 'YYYY-MM-DD') AS TO_DATE,
+    DATA.value:start_time_hour::int AS START_TIME_HOUR,
+    DATA.value:start_time_minute::int AS START_TIME_MINUTE,
+    LEFT(DATA.value:all_must_complete::string, 1) AS ALL_MUST_COMPLETE,
+    DATA.value:status::string AS STATUS,
+    DATA.value:organisation_id::string AS ORGANISATION_ID,
+    DATA.value:timezone::string AS TIMEZONE,
+    LEFT(DATA.value:can_late_submit::string, 1) AS CAN_LATE_SUBMIT,
+    DATA.value:site_id::string AS SITE_ID,
+    DATA.value:template_id::string AS TEMPLATE_ID,
+    DATA.value:creator_user_id::string AS CREATOR_USER_ID
+FROM
+    DEV_RAW_DB.IAUDITOR_RAW.IAUDITOR_SCHEDULES,
+    LATERAL FLATTEN(input => JSON_PAYLOAD:data) AS DATA
+WHERE
+    PROCESSED = 'f';

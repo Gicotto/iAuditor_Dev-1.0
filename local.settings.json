@@ -1,0 +1,23 @@
+{
+    "IsEncrypted": false,
+    "Values": {
+        "FUNCTIONS_WORKER_RUNTIME": "python",
+        "Azure_Web_Jobs_Feature_Flags": "EnableWorkerIndexing",
+        "AzureWebJobsStorage": "",
+        "DEV_ENVM": "DEV",
+        "USER": "DEV_DATA_LOADER_USER",
+        "PASSWORD": "BrTh4sndUcu3sY",
+        "ACCOUNT": "bv18165.central-us.azure",
+        "RAW_DATABASE": "DEV_RAW_DB",
+        "RAW_SCHEMA": "IAUDITOR_RAW",
+        "TRF_DATABASE": "DEV_TRF_DB",
+        "TRF_SCHEMA": "IAUDITOR_TRF",
+        "WAREHOUSE": "DEV_DATA_LOADER_WH",
+        "ROLE": "AR_DEV_ALL_ETL",
+        "LOG_SCHEMA": "BATCH_AUDIT",
+        "LOG_TABLE": "IAUDITOR_EXECUTION_LOGS",
+        "API_TOKEN": "4d4b2623fe7133d744f3db6d6db6459825766e73260d5906d318fe959a289e93",
+        "CALL_TABLE": "IAUDITOR_ACTIONS",
+        "ENVIRON": 
+    }
+}

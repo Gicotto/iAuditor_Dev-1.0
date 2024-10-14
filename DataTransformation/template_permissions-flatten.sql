@@ -1,0 +1,20 @@
+INSERT INTO DEV_TRF_DB.IAUDITOR_TRF.IAUDITOR_TEMPLATE_PERMISSIONS (
+    PERMISSION_ID,
+    TEMPLATE_ID,
+    PERMISSION,
+    ASSIGNEE_ID,
+    ASSIGNEE_TYPE,
+    ORGANISATION_ID
+)
+SELECT
+    LEFT(DATA.value:id::string, 1) AS PERMISSION_ID,
+    DATA.value:template_id::string AS TEMPLATE_ID,
+    DATA.value:permission::string AS PERMISSION,
+    DATA.value:assignee_id::string AS ASSIGNEE_ID,
+    DATA.value:assignee_type::string AS ASSIGNEE_TYPE,
+    DATA.value:organisation_id::string AS ORGANISATION_ID
+FROM
+    DEV_RAW_DB.IAUDITOR_RAW.IAUDITOR_TEMPLATE_PERMISSIONS,
+    LATERAL FLATTEN(input => JSON_PAYLOAD:data) AS DATA
+WHERE
+    PROCESSED = 'f';
